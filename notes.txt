@@ -1,0 +1,63 @@
+b'GET /nosure?username=abcd HTTP/1.1
+Host: localhost:9000
+Cookie: username-localhost-8888="2|1:0|10:1536180270|23:username-localhost-8888|44:NjMxNmFiZDhiNjA3NGIxNjk0ZWQxMGViOWFiNzYyZWM=|4a728fd2024f6f17f70388bbca0afc22f2332831b1d93ce6ac156907f7ad763e"; _xsrf=2|c56960c0|02bf58767e79cf1acf6ef66e5476cbc7|1534382324
+Connection: keep-alive
+Upgrade-Insecure-Requests: 1
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/11.1.2 Safari/605.1.15
+Referer: http://localhost:9000/?username=xingyu
+Accept-Language: en-us
+Accept-Encoding: gzip, deflate
+
+'
+
+
+environ
+
+remaining_not_shared: int, (default value) number of nodes - 1
+
+remaining_not_published: int, (default value) number of nodes - 1
+
+/* number of peers */
+num_peers: int, (dv) number of nodes - 1
+
+/* length = nodes - 1, shares for all peers*/
+shares: [int], (dv) none
+
+/* the share to be kept by the client */
+private_share: int, (dv) none
+
+/* masked vote */
+vote_masked: int, (dv) none
+
+/* whether the client has voted */
+client_has_voted: bool, (dv) False
+
+/* all shares s satisfy that s >= 0 and s < zm */
+/* assuming the voting vector is m * n, zm should be larger than 2**(m*n) */
+zm: int (dv) a predefined value
+
+/* wether the tally is finished */
+tallied: bool, (dv) False
+
+/* votes published by peers*/
+votes: {peer_ip: vote}
+
+/* a str that represents a binary vector */
+tally_result: str, (dv) none
+
+/* a dict that saves the shares from all peers */
+peer_shares: {peer_ip: int}
+
+/* a dict that indicates whether a peer has shared its share */
+peer_has_shared: {peer_ip: bool}
+
+/* a dict that saves the masked votes published by peers */
+peer_votes: {peer_ip: int}
+
+/* a dict that indicates whether a peer has published its share */
+peer_has_published: {peer_ip: bool}
+
+/* list of peers' ip addresses and ports */
+peers: [(str, int)]
+
