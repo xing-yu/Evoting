@@ -1,3 +1,5 @@
+request example
+
 b'GET /nosure?username=abcd HTTP/1.1
 Host: localhost:9000
 Cookie: username-localhost-8888="2|1:0|10:1536180270|23:username-localhost-8888|44:NjMxNmFiZDhiNjA3NGIxNjk0ZWQxMGViOWFiNzYyZWM=|4a728fd2024f6f17f70388bbca0afc22f2332831b1d93ce6ac156907f7ad763e"; _xsrf=2|c56960c0|02bf58767e79cf1acf6ef66e5476cbc7|1534382324
@@ -12,7 +14,7 @@ Accept-Encoding: gzip, deflate
 '
 
 
-environ
+environ dictionary definition
 
 remaining_not_shared: int, (default value) number of nodes - 1
 
