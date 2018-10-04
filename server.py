@@ -2,17 +2,58 @@
 
 class Server:
 
-    def __init__(self, host="", port, peer_0):
-        self.host = host        # server ip
-        self.port = port        # server port
-        self.buff_size = 1024   # buffer size for receive
-        self.queue_size = 50    # size for queue of connections
-        # self.server_socket, create when starting the server
+    def __init__(self, peer_0, host = "", port = 9000, buff_size = 1024, queue_size = None):
+        
+        from multiprocessing import Manager, Lock
+
+        self.environ = Manager.dict()   # environment dict
+        self.lock = Lock()              # lock for multiprocess 
+
+        self.peer_0 = peer_0            # (ip, port) of peer 0
+        self.host = host                # server ip
+        self.port = port                # server port
+        self.buff_size = buff_size      # buffer size for receive
+        self.queue_size = queue_size    # size for queue of connections
+
         # self.peer_0, the server that sync all peer information, preset when starting the server
         # self.peer_0, (ip, port)
 
+    #---------------- node registration --------------------
+    def register(self):
+        from socket import *
+        import sys
+
+        # initialize a socket to send node info to peer 0
+        # peer 0 must be working
+
+        s = socket(AF_INET, SOCK_STREAM)
+
+        try:
+            
+            s.connect(self.peer_0)
+        
+        except:
+
+            print("Cannot connect to peer 0!")
+
+            sys.exit(-1)
+
+        # create a request to send port information to peer 0
+
+        request = "GET /nodeinfo?"
+
+        request += 'port=' + self.port
+
+        request += 'HTTP/1.1\r\n'
+
+        s.sendall(request.encode())
+
+        # TODO: make peer 0 send back a peer id
+
+        s.close()        
+
     #--------- start server to listen for requests ---------
-    def start(self, app, peer_0):
+    def start(self):
 
         from socket import *
 
@@ -27,9 +68,6 @@ class Server:
         self.server_socket.listen(queue_size)
 
         print("Server is ready at " + str(self.host) + ": " str(self.port))
-
-        # set peer_0
-        self.peer_0 = peer_0
 
         # loop forever to get request
         self.get_requests()
