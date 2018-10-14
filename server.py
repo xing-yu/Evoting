@@ -9,6 +9,9 @@ class Server:
         self.environ = Manager.dict()   # environment dict
         self.lock = Lock()              # lock for multiprocess 
 
+        # keep track of whether a peer has shared
+        self.environ['peer_has_shared'] = {}
+
         self.peer_0 = peer_0            # (ip, port) of peer 0
         self.host = host                # server ip
         self.port = port                # server port
@@ -42,7 +45,7 @@ class Server:
 
         request = "GET /nodeinfo?"
 
-        request += 'port=' + self.port
+        request += 'port=' + str(self.port)
 
         request += 'HTTP/1.1\r\n'
 
@@ -94,14 +97,14 @@ class Server:
             parsed_request = self.parse_request(request)
 
             # create a process to handle the request
-            process = multiprocessing.Process(target = handle_request, args = (parsed_request, conn, addr, self.peer_0, self.environ))
+            process = multiprocessing.Process(target = handle_request, args = (parsed_request, conn, addr, self.lock, self.environ))
 
             process.daemon = True
             
             process.start()
 
 
-    #------------- parse requests -----------------------------------
+    #------------- parse requests -------------------------
     def parse_request(self, request):
         # extract request line from the http request
         # return a list with [method, path, request_version]
@@ -109,3 +112,15 @@ class Server:
         request_line = request.decode().split('\r\n')[0]
 
         return request_line.split()
+
+#--------------------------- run -----------------------------------
+if name == '__main__':
+
+    node = Server(peer_0)
+
+    # register node with peer_0
+    node.register()
+
+    # node start
+    node.start()
+

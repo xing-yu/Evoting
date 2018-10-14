@@ -8,12 +8,12 @@ tally_page = "" # html file for rendering the tally page
 
 #--------------------------- handle a single request ------------------------------
 
-def handle_request(parsed_request, conn, addr, peer_0, environ):
+def handle_request(parsed_request, conn, addr, lock, environ):
 
 	# parsed_request: (method, path, version)
 	# conn: socket connection
 	# addr: client address (ip, port)
-	# peer_0: peer with all address (ip, port)
+	# lock: semaphone
 
 	from urllib.parse import urlparse
     from urllib.parse import parse_qs
@@ -23,13 +23,13 @@ def handle_request(parsed_request, conn, addr, peer_0, environ):
 
 		# call sub-function to handle a local request
 
-		handle_local_request(parsed_request, conn, peer_0, environ)	
+		handle_local_request(parsed_request, conn, lock, environ)	
 
 	# handle peer request
 	else:
 
 		# call sub-function to handle a peer request
-		handle_peer_request(parsed_request, conn, addr, peer_0, environ)
+		handle_peer_request(parsed_request, conn, addr, lock, environ)
 
 #-------------------------- handle local request (sub) ---------------------------
 def handle_local_request(parsed_request, conn, peer_0, environ):
@@ -55,24 +55,28 @@ def handle_local_request(parsed_request, conn, peer_0, environ):
 
 		else:
 
-			# TODO: lock before modifying environ
+			# lock environ before writing
+
+			lock.acquire()
 
 			environ['client_has_voted'] = True
 
-			# TODO: implement functions to generate vote vector/value from the vote
+			lock.release()
 
-			environ['self_vote'] = gen_vote(q['vote'])
+			# TODO: move the gen_vote to the server class
+			# which should be triggered by peer 0
 
-			# TODO: unlock after this point
+			# environ['self_vote'] = gen_vote(q['vote'])
 
-			# after saving the vote, break it into shares
-			# broadcast shares to all peers
+			# TODO: move the broadcast process to the server class
+			# which is also triggered by peer 0
 
-			broadcast_shares(environ['self_vote'])
+			# broadcast_shares(environ['self_vote'])
 
 	# if the local peer has voted
 	# new vote information(if any) will be ignored
 	# TODO: think about the question - should revote be allowed?
+	# maybe not for now
 
 	else:
 
@@ -83,9 +87,9 @@ def handle_local_request(parsed_request, conn, peer_0, environ):
 		conn.sendall(response)
 
 #-------------------------- handle peer request (sub) ----------------------------
-def handle_peer_request(parsed_request, conn, addr, peer_0, environ):
+def handle_peer_request(parsed_request, conn, addr, lock, environ):
 
-	# use http format among peers
+	# use http protocol among peers
 	# information stored as queries in path
 
 	# queries
@@ -100,6 +104,8 @@ def handle_peer_request(parsed_request, conn, addr, peer_0, environ):
 
 		# TODO: create a function that retrieve the list of peers from peer_0
 		# as part of the server initialization
+		# may not need to acquire that
+		# just keep a record  of the peers
 
 		# mark the peer as shared, using ip as peer id
 		# save the shared value
@@ -107,7 +113,7 @@ def handle_peer_request(parsed_request, conn, addr, peer_0, environ):
 		# TODO: lock to modify
 		# environ['remaining_not_shared'] is the number of peers that haven't shared
 
-		if environ['peer_has_shared'][addr[0]] == False:
+		if addr[0] not in environ['peer_has_shared']:
 
 			environ['peer_has_shared'][addr[0]] = True
 			environ['peer_shares'][addr[0]] = q['value'][0]

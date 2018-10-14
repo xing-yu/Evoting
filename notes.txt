@@ -13,53 +13,68 @@ Accept-Encoding: gzip, deflate
 
 '
 
+#------------------------------------ design of metadata ----------------------------
 
-environ dictionary definition
+1. metadata: Manager.dict()
 
-remaining_not_shared: int, (default value) number of nodes - 1
+2. peer_info: {str: (int, str)}
 
-remaining_not_published: int, (default value) number of nodes - 1
+	{ip: (port, status)}
 
-/* number of peers */
-num_peers: int, (dv) number of nodes - 1
+	ip: peer's ip in string format
 
-/* length = nodes - 1, shares for all peers*/
-shares: [int], (dv) none
+	port: peer's port number 
 
-/* the share to be kept by the client */
-private_share: int, (dv) none
+	status: "ONLINE", "VOTED"
 
-/* masked vote */
-vote_masked: int, (dv) none
+3. peer_votes: {str: int}
 
-/* whether the client has voted */
-client_has_voted: bool, (dv) False
+	{ip: vote}
 
-/* all shares s satisfy that s >= 0 and s < zm */
-/* assuming the voting vector is m * n, zm should be larger than 2**(m*n) */
-zm: int (dv) a predefined value
+	ip: peer's ip
 
-/* wether the tally is finished */
-tallied: bool, (dv) False
+	vote: integer of the masked vote from that peer
 
-/* votes published by peers*/
-votes: {peer_ip: vote}
+4. peer_shares: {str: int}
 
-/* a str that represents a binary vector */
-tally_result: str, (dv) none
+	{ip: share}
 
-/* a dict that saves the shares from all peers */
-peer_shares: {peer_ip: int}
+	ip: peer's ip
 
-/* a dict that indicates whether a peer has shared its share */
-peer_has_shared: {peer_ip: bool}
+	share: integer of the share from that peer
 
-/* a dict that saves the masked votes published by peers */
-peer_votes: {peer_ip: int}
+5. shares: [int]
 
-/* a dict that indicates whether a peer has published its share */
-peer_has_published: {peer_ip: bool}
+	list of integers, derived from breaking down local vote using (n,n) secret sharing.
 
-/* list of peers' ip addresses and ports */
-peers: [(str, int)]
+	list length is n - 1
+
+	the last share is private
+
+6. local_vote: int
+
+	an integer derived from the binary vector of the local vote
+
+7. masked_vote: int
+
+	vote masked with peers' shares
+
+8. Zm: int
+	
+	all shares s_i should satisfy that s >= 0 and s <= Zm
+
+	the value should be predefined based on number of votes and candidates
+
+9. node_id: int
+
+	integer returned from peer_0
+
+	represent the id of local node
+
+	used in turn vote into binary vector and then the vote value
+
+10. tally_result: [int]
+
+	a binary vector derived from the final tallied result
+
 
