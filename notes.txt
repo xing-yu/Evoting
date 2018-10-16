@@ -53,7 +53,7 @@ Accept-Encoding: gzip, deflate
 
 6. local_vote: int
 
-	an integer derived from the binary vector of the local vote
+	an integer indicates which candidate is chosen by the node, 0 based index
 
 7. masked_vote: int
 
@@ -77,4 +77,18 @@ Accept-Encoding: gzip, deflate
 
 	a binary vector derived from the final tallied result
 
+11. vector_len: int
 
+	an integer represents the lenght of the voting vector
+
+	vector_len = candidate_num * voter_num
+
+12. num_active_peer: int
+
+	number of active peers at tally
+
+	peer 0 broadcast it at tally
+
+13. convert_vote: int
+
+	based on local vote, turn it into a binary vector, then convert into an int vote

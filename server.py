@@ -2,15 +2,12 @@
 
 class Server:
 
-    def __init__(self, peer_0, host = "", port = 9000, buff_size = 1024, queue_size = None):
+    def __init__(self, peer_0, num_candidates = 2, host = "", port = 9000, buff_size = 1024, queue_size = None):
         
         from multiprocessing import Manager, Lock
 
-        self.environ = Manager.dict()   # environment dict
+        self.meta_data = Manager.dict() # meta data
         self.lock = Lock()              # lock for multiprocess 
-
-        # keep track of whether a peer has shared
-        self.environ['peer_has_shared'] = {}
 
         self.peer_0 = peer_0            # (ip, port) of peer 0
         self.host = host                # server ip
@@ -18,8 +15,34 @@ class Server:
         self.buff_size = buff_size      # buffer size for receive
         self.queue_size = queue_size    # size for queue of connections
 
+        self.num_candidates = num_candidates    # int, number of candidates for voting
+
         # self.peer_0, the server that sync all peer information, preset when starting the server
         # self.peer_0, (ip, port)
+
+        # register node
+        self.register()
+
+        # initialize metadata
+        self.init_meta()
+
+    #---------------- initialize meta data -----------------
+    def init_meta(self):
+
+        self.meta_data["peer_info"] = {}    # {ip: (port, status)}
+        self.meta_data["peer_votes"] = {}   # {ip: vote(int)}
+        self.meta_data["peer_shares"] = {}  # {ip: share(int)}
+        self.meta_data["shares"] = []       # [int]
+        self.meta_data["local_vote"] = None 
+        self.meta_data["masked_vote"] =None
+        self.meta_data["Zm"] = None
+        self.meta_data["tally_result"] = None
+        self.meta_data["vector_len"] = None
+        self.meta_data["num_active_peer"] = None
+
+        # TODO: since Zm cannot be defined until tally
+        # save absolute vote (which candidate the node voted for)
+        # in meta data
 
     #---------------- node registration --------------------
     def register(self):
@@ -51,7 +74,11 @@ class Server:
 
         s.sendall(request.encode())
 
-        # TODO: make peer 0 send back a peer id
+        node_id = s.recv(1024).decode()
+
+        self.meta_data["node_id"] = int(node_id)
+
+        print("Node registration is successful! The node id is " + node_id)
 
         s.close()        
 
@@ -75,10 +102,6 @@ class Server:
         # loop forever to get request
         self.get_requests()
 
-        # TODO
-        # creat another process/thread for heartbeat
-        # self.app.heartbeat(self.peer_0)
-
     #---------- loop forever to accept incoming connections -------
     def get_requests(self):
 
@@ -97,7 +120,7 @@ class Server:
             parsed_request = self.parse_request(request)
 
             # create a process to handle the request
-            process = multiprocessing.Process(target = handle_request, args = (parsed_request, conn, addr, self.lock, self.environ))
+            process = multiprocessing.Process(target = handle_request, args = (parsed_request, conn, addr, self.lock, self.meta_data))
 
             process.daemon = True
             
@@ -117,9 +140,6 @@ class Server:
 if name == '__main__':
 
     node = Server(peer_0)
-
-    # register node with peer_0
-    node.register()
 
     # node start
     node.start()

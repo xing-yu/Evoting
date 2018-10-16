@@ -5,10 +5,17 @@
 
 vote_page = ""	# html file for rendering the voting page
 tally_page = "" # html file for rendering the tally page
+vote_success_page = "" # html file to show user that vote is successfully received
+
+# vote page should have one form
+# action = "submitVote"
+# query name = "vote"
+# query value = [the vote]
+# e.g., /submitVote?vote=1
 
 #--------------------------- handle a single request ------------------------------
 
-def handle_request(parsed_request, conn, addr, lock, environ):
+def handle_request(parsed_request, conn, addr, lock, meta_data):
 
 	# parsed_request: (method, path, version)
 	# conn: socket connection
@@ -21,22 +28,19 @@ def handle_request(parsed_request, conn, addr, lock, environ):
 	# handle local request
 	if addr[0] = '127.0.0.1':
 
-		# call sub-function to handle a local request
-
-		handle_local_request(parsed_request, conn, lock, environ)	
+		handle_local_request(parsed_request, conn, lock, meta_data)	
 
 	# handle peer request
 	else:
 
-		# call sub-function to handle a peer request
-		handle_peer_request(parsed_request, conn, addr, lock, environ)
+		handle_peer_request(parsed_request, conn, addr, lock, meta_data)
 
 #-------------------------- handle local request (sub) ---------------------------
-def handle_local_request(parsed_request, conn, peer_0, environ):
+def handle_local_request(parsed_request, conn, peer_0, meta_data):
 
 	# if the local peer has not voted
 
-	if environ['client_has_voted'] == False:
+	if meta_data["local_vote"] == None:
 
 		# get vote information from the request
 
@@ -51,6 +55,8 @@ def handle_local_request(parsed_request, conn, peer_0, environ):
 
 			conn.sendall(response)
 
+			conn.close()
+
 		# save vote value
 
 		else:
@@ -59,35 +65,44 @@ def handle_local_request(parsed_request, conn, peer_0, environ):
 
 			lock.acquire()
 
-			environ['client_has_voted'] = True
+			meta_data["local_vote"] = int(q['vote'][0])
 
 			lock.release()
 
-			# TODO: move the gen_vote to the server class
-			# which should be triggered by peer 0
+			# return success message
 
-			# environ['self_vote'] = gen_vote(q['vote'])
+			response = b"""\
+			HTTP/1.1 200 OK
 
-			# TODO: move the broadcast process to the server class
-			# which is also triggered by peer 0
+			Hi there, your vote is received!
 
-			# broadcast_shares(environ['self_vote'])
+			"""
 
-	# if the local peer has voted
-	# new vote information(if any) will be ignored
-	# TODO: think about the question - should revote be allowed?
-	# maybe not for now
+			conn.sendall(response)
+
+			conn.close()
+
+			# TODO: send status update to peer 0 from ready to voted
+
+	# revoting is not allowed
 
 	else:
 
-		# generate tally view
+		# return success message
 
-		response = tally_view(environ)
+		response = b"""\
+		HTTP/1.1 200 OK
+
+		Hi there, your vote is received!
+
+		"""
 
 		conn.sendall(response)
 
+		conn.close()
+
 #-------------------------- handle peer request (sub) ----------------------------
-def handle_peer_request(parsed_request, conn, addr, lock, environ):
+def handle_peer_request(parsed_request, conn, addr, lock, meta_data):
 
 	# use http protocol among peers
 	# information stored as queries in path
@@ -95,6 +110,7 @@ def handle_peer_request(parsed_request, conn, addr, lock, environ):
 	# queries
 	# type: can be either share or vote
 	# value: the value of the share or vote
+	# e.g. /peer?type='share'&value='11'
 	
 	q = parse_qs(urlparse(parsed_request[1]).query)
 
@@ -110,41 +126,35 @@ def handle_peer_request(parsed_request, conn, addr, lock, environ):
 		# mark the peer as shared, using ip as peer id
 		# save the shared value
 
-		# TODO: lock to modify
-		# environ['remaining_not_shared'] is the number of peers that haven't shared
+		lock.acquire()
 
-		if addr[0] not in environ['peer_has_shared']:
+		if addr[0] not in meta_data['peer_shares']:
 
-			environ['peer_has_shared'][addr[0]] = True
-			environ['peer_shares'][addr[0]] = q['value'][0]
-			environ['remaining_not_shared'] -= 1
+			meta_data['peer_shares'][addr[0]] = int(q['value'][0])
 
-		# TODO: unlock after this point
+		lock.release()
 
-		# TODO: check if all peers have shared
-		# TODO: implement the publish function
+		# publish if all shares received
+		if len(meta_data["peer_info"].keys()) == len(meta_data["peer_shares"].keys()):
 
-		if environ['remaining_not_shared'] == 0:
-			publish()
+			publish_vote(meta_data)
 
 	# if the peer is publishing its vote
 	elif q['type'][0] == 'vote':
 
-		if environ['peer_has_published'][addr[0]] == False:
+		lock.acquire()
 
-			# TODO: lock
+		if addr[0] not in meta_data["peer_votes"]:
 
-			environ['peer_has_published'][addr[0]] = True
-			environ['peer_votes'][addr[0]] = q['vote'][0]
-			environ['remaining_not_published'] -= 1
+			meta_data["peer_votes"][addr[0]] = int(q['value'][0])
 
-			# TODO: unlock
+		lock.release()
 
 		# tally if all votes are published
-		# TODO: implement tally function
 
-		if environ['remaining_not_published'] == 0:
-			tally()
+		if len(meta_data["peer_info"].keys()) == len(meta_data["peer_votes"].keys()) and len(meta_data["peer_info"].keys()) == len(meta_data["peer_shares"].keys()):
+
+			tally(lock, meta_data)
 
 #---------------------------- vote view function (sub) ---------------------------
 
@@ -169,18 +179,14 @@ def vote_view(html_file):
 
 #--------------------------- tally view function ----------------------------------
 
-def tally_view(html_file, environ):
+def tally_view(html_file, meta_data):
 	
 	# if environ["tallied"] is true
 	# return tallied result
 
-	if environ['tallied'] == True:
+	if meta_data["tally_result"] == None:
 
-		tally_result = environ['tally_result']
-
-	# try tally first
-	else:
-		tally_result = None
+		return
 
 	# http header
 	http_response = b"""\
@@ -202,63 +208,70 @@ def tally_view(html_file, environ):
 
 #---------------------------- tally function --------------------------------------
 
-def tally(environ):
+def tally(lock, meta_data):
 	
 	# if already tallied
 
-	if environ['tallied'] == True:
+	if meta_data['tally_result'] != None:
 
 		return
-
-	# if peers haven't submitted all votes
-
-	if environ['remaining_not_published'] > 0 or if environ['remaining_not_shared'] > 0:
-
-		return 
 
 	# tally votes
 
-	tally_total = 0
+	tally_result = 0
 
-	for ip in environ['peer_votes'].keys():
-		tally_total += int(environ['peer_votes'][ip])
+	for ip in meta_data['peer_votes'].keys():
+		tally_result += meta_data['peer_votes'][ip]
 
-	tally_total %= environ['zm']
+	# TODO: calculate Zm, and voting vector length in publish share function
 
-	# TODO: plus own_vote_masked
-	# TODO: lock
+	tally_result %= meta_data['Zm']
+
+	if meta_data["masked_vote"] == None:
+
+		mask_vote(meta_data)
+
+	tally_result += meta_data["masked_vote"]
+
 	# Note: vector_len = cadidate_num * voter_num
 
-	environ['tally_result'] = bin(tally_total)[2:].zfill(environ['vector_len'])
-	environ['tallied'] = True
+	lock.acquire()
+
+	meta_data['tally_result'] = bin(tally_result)[2:].zfill(meta_data['vector_len'])
+
+	lock.release()
 
 #---------------------------- broadcast share -------------------------------------
 
-# broadcast shares of vote after receiving vote from the local peer
-def broadcast_shares(environ):
+# broadcast shares to peers
+# triggered by signal from peer 0
+
+def broadcast_shares(lock, meta_data):
 	
-	# return if shares do not exist
-	if "shares" not in environ:
-		return
+	# generate shares 
+	gen_shares(lock, meta_data)
 
 	# TODO: prevent duplicated import
 	from socket import *
 
 	i = 0
-	l = environ['num_peers']
 
-	while i < l:
+	for peer in meta_data["peer_info"].keys():
+
 		s = socket(AF_INET, SOCK_STREAM)
 
-		share = environ['shares'][i]
+		s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
 
-		peer = environ['peers'][i]
+		share = meta_data['shares'][i]
 
 		s.connect(peer)
 
 		# TODO: enclose share in http
+		# e.g. /peer?type='share'&value='11'
 
-		s.sendall(share.encode())
+		packet = "GET /peer" + str(meta_data["node_id"]) + "?type=share&value=" + str(share) + " HTTP/1.1\r\n"
+
+		s.sendall(packet.encode())
 
 		s.close()
 
@@ -267,32 +280,33 @@ def broadcast_shares(environ):
 #----------------------------- generate share -------------------------------------
 	
 # generate shares for all peers
-def gen_shares(environ):
+def gen_shares(lock, meta_data):
 
 	# return if the client hasn't voted
-	
-	if environ['client_has_voted'] == False:
-		return
 
 	from random import randint
 
-	num_shares = environ['num_peers']
+	num_shares = meta_data['num_active_peers']
 
-	# TODO: predefine Zm in server initalization
-
-	zm = environ['zm']
+	Zm = meta_data['Zm']
 
 	shares = []
 
 	for i in range(num_shares - 1):
-		shares.append(randint(0, zm - 1))
 
-	private_share = (int(environ['self_vote']) - sum(shares)) % zm
+		shares.append(randint(0, Zm - 1))
 
-	# TODO: lock
-	environ['shares'] = shares
-	environ['private_share'] = private_share
-	# TODO: unlock
+	vote = meta_data["convert_vote"]
+
+	private_share = (vote - sum(shares)) % Zm
+
+	shares.append(private_share)
+
+	lock.acquire()
+
+	meta_data['shares'] = shares
+
+	lock.release()
 
 #---------------------------- mask vote -------------------------------------------
 
