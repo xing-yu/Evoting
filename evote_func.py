@@ -61,8 +61,6 @@ def handle_local_request(parsed_request, conn, peer_0, meta_data):
 
 		else:
 
-			# lock environ before writing
-
 			lock.acquire()
 
 			meta_data["local_vote"] = int(q['vote'][0])
@@ -258,18 +256,26 @@ def broadcast_shares(lock, meta_data):
 
 	for peer in meta_data["peer_info"].keys():
 
+		# ignore the peer if it is not ready (hasn't voted till tally)
+
+		if meta_data["peer_info"][peer][1] != "READY":
+
+			continue
+
 		s = socket(AF_INET, SOCK_STREAM)
 
 		s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
 
 		share = meta_data['shares'][i]
 
-		s.connect(peer)
+		port = meta_data["peer_info"][peer][0]
 
-		# TODO: enclose share in http
+		s.connect((peer, port))
+
+		# enclose information in HTTP packet
 		# e.g. /peer?type='share'&value='11'
 
-		packet = "GET /peer" + str(meta_data["node_id"]) + "?type=share&value=" + str(share) + " HTTP/1.1\r\n"
+		packet = "GET /peer_" + str(meta_data["node_id"]) + "?type=share&value=" + str(share) + " HTTP/1.1\r\n"
 
 		s.sendall(packet.encode())
 
@@ -312,64 +318,62 @@ def gen_shares(lock, meta_data):
 
 # mask own vote once all shares are received from all peers
 
-def mask_vote(environ):
+def mask_vote(lock, meta_data):
 
 	# return if not everyone has voted
 
-	if environ['remaining_not_shared'] > 0:
-		return
-
-	# read and add shares
-
 	mask = 0
 
-	for peer in environ['peer_shares'].keys():
+	for peer in meta_data['peer_shares'].keys():
 
-		mask += int(environ['peer_shares'][peer])
+		mask += meta_data['peer_shares'][peer]
 
-	# TODO: lock environ
+	lock.acquire()
 
-	environ["vote_masked"] = environ["private_share"] + mask
+	meta_data["masked_vote"] = meta_data["shares"][-1] + mask
 
-	# TODO: unlock
+	lock.release()
 
 #---------------------------- publish vote ----------------------------------------
 
 # publish vote once all shares from all peers are received
 
-def publish_vote(environ):
+def publish_vote(lock, meta_data):
 	
 	# TODO: check how to avoid duplicated import
 	from socket import *
 
-	# return if vote is not masked
-
-	if "vote_masked" not in environ:
-		return
+	if meta_data["masked_vote"] == None:
+		mask_vote(lock, meta_data)
 
 
 	# send a share to each peer
-	l = environ['num_peers']
 
-	i = 0
+	vote = meta_data["mask_vote"]
 
-	vote = environ["vote_masked"]
+	for peer in meta_data["peer_info"].keys():
 
-	while i < l:
+		# pass if the peer hasn't voted
+
+		if meta_data["peer_info"][peer][1] != "READY":
+
+			continue
 
 		s = socket(AF_INET, SOCK_STREAM)
 
-		peer = environ['peers'][i]
+		port = meta_data["peer_info"][peer][0]
 
-		s.connect(peer)
+		s.connect((peer, port))
 
-		# TODO: enclose vote in http
+		# enclose information in HTTP packet
+		# e.g. /peer?type='share'&value='11'
 
-		s.sendall(share.encode())
+		packet = "GET /peer_" + str(meta_data["node_id"]) + "?type=vote&value=" + str(vote) + " HTTP/1.1\r\n"
+
+		s.sendall(packet.encode())
 
 		s.close()
 
-		i += 1
 
 
 

@@ -25,7 +25,7 @@ Accept-Encoding: gzip, deflate
 
 	port: peer's port number 
 
-	status: "ONLINE", "VOTED"
+	status: "ONLINE", "READY"
 
 3. peer_votes: {str: int}
 
