@@ -1,6 +1,6 @@
 # server for peers
 
-class Server:
+class Node:
 
     def __init__(self, peer_0, num_candidates = 2, host = "", port = 9000, buff_size = 1024, queue_size = None):
         
@@ -139,7 +139,7 @@ class Server:
 #--------------------------- run -----------------------------------
 if name == '__main__':
 
-    node = Server(peer_0)
+    node = Node(peer_0)
 
     # node start
     node.start()
