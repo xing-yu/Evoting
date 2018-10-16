@@ -22,11 +22,8 @@ def handle_request(parsed_request, conn, addr, lock, meta_data):
 	# addr: client address (ip, port)
 	# lock: semaphone
 
-	from urllib.parse import urlparse
-    from urllib.parse import parse_qs
-
 	# handle local request
-	if addr[0] = '127.0.0.1':
+	if addr[0] == '127.0.0.1':
 
 		handle_local_request(parsed_request, conn, lock, meta_data)	
 
@@ -37,6 +34,9 @@ def handle_request(parsed_request, conn, addr, lock, meta_data):
 
 #-------------------------- handle local request (sub) ---------------------------
 def handle_local_request(parsed_request, conn, peer_0, meta_data):
+
+	from urllib.parse import urlparse
+    from urllib.parse import parse_qs
 
 	# if the local peer has not voted
 
@@ -110,6 +110,9 @@ def handle_peer_request(parsed_request, conn, addr, lock, meta_data):
 	# value: the value of the share or vote
 	# e.g. /peer?type='share'&value='11'
 	
+	from urllib.parse import urlparse
+    from urllib.parse import parse_qs
+
 	q = parse_qs(urlparse(parsed_request[1]).query)
 
 	# if it's a share

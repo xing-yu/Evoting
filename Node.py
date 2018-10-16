@@ -38,7 +38,7 @@ class Node:
         self.meta_data["Zm"] = None
         self.meta_data["tally_result"] = None
         self.meta_data["vector_len"] = None
-        self.meta_data["num_active_peer"] = None
+        self.meta_data["num_active_peers"] = None
 
         # TODO: since Zm cannot be defined until tally
         # save absolute vote (which candidate the node voted for)
@@ -68,7 +68,9 @@ class Node:
 
         request = "GET /nodeinfo?"
 
-        request += 'port=' + str(self.port)
+        request += 'type=registration&'
+
+        request += 'value=' + str(self.port)
 
         request += 'HTTP/1.1\r\n'
 
@@ -107,6 +109,8 @@ class Node:
 
         import multiprocessing
 
+        from evote_func_node import *
+
         if self.server_socket == None:
             return -1
 
@@ -116,7 +120,6 @@ class Node:
 
             request = conn.recv(self.buff_size)
 
-            # TODO: consider if the request parse should be moved to app
             parsed_request = self.parse_request(request)
 
             # create a process to handle the request

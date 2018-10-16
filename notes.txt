@@ -13,7 +13,7 @@ Accept-Encoding: gzip, deflate
 
 '
 
-#------------------------------------ design of metadata ----------------------------
+#------------------------------- design of metadata for nodes ----------------------------
 
 1. metadata: Manager.dict()
 
