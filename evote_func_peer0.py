@@ -27,5 +27,33 @@ def handle_peer_request(parsed_request, conn, addr, lock, meta_data):
 
     if q['type'][0] == 'registration':
 
-    	
+    	# this is a registration request from a new node
+
+    	lock.acquire()
+
+    	if addr[0] not in meta_data["node_info"]:
+
+            meta_data["node_info"][addr][0] = (q['value'][0], 'ONLINE', meta_data['cur_id'])
+
+            conn.sendall(str(meta_data['cur_id']).encode())
+
+            meta_data['cur_id'] += 1
+
+        lock.release()
+
+    elif q['type'][0] == 'voted':
+
+        lock.acquire()
+
+        
+
+
+
+
+
+    		
+
+
+
+
 

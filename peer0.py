@@ -24,13 +24,12 @@ class Peer0:
 		self.meta_data = Manager.dict()	# meta data for peer 0
 		self.lock = Lock() 				# lock for multiprocessing
 
-		self.meta_data["node_info"] = {}					# {ip: (port, status)}
+		self.meta_data["node_info"] = {}					# {ip: (port, status, id)}
 		self.meta_data["num_active_nodes"] = None 			# int
 		self.meta_data["num_candidates"] = num_candidates 	# int
 		self.meta_data["tallyisvalid"] = False				# int
 		self.meta_data["node_isshared"] = {}				# {ip: bool}
 		self.meta_data["node_ispublished"] = {}				# {ip: bool}
-		self.meta_data["node_id"] = {}						# {ip: int}
 		self.meta_data["cur_id"] = 0						# int
 		self.meta_data["host"] = ip
 		self.host = ip
