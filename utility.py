@@ -2,7 +2,7 @@
 
 #------------------- render page --------------------------
 
-def render_page(metadata, conn, file):
+def render_page(conn, file):
 
 	header = b"""\
 		HTTP/1.1 200 OK
@@ -17,7 +17,6 @@ def render_page(metadata, conn, file):
 
 	conn.sendall(response.encode())
 
-def public(metadata, type):
 
 	
 

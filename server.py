@@ -10,7 +10,7 @@ class Server:
 
 	# server type can be either node or peer0
 
-	def __init__(self, server_type = 'node', buff_size = 1024, queue_size = None):
+	def __init__(self, server_type = 'node', peer0_ip = None, peer0_port = None, buff_size = 1024, queue_size = None):
 
 		if server_type == "peer0":
 
@@ -28,7 +28,17 @@ class Server:
 
 			self.module.init_metadata(self)
 
-			# TODO: init meta data for node
+			# init metadata
+			module.init_metadata(self)
+
+			# save peer 0 info
+			self.metadata["peer0"] = (peer0_ip, peer0_port)
+
+			# FIXME: peer 0 should also give number of candidates
+
+			# register and get node id from peer 0
+
+			module.register(metadata)
 
 		if not self.metadata:
 
@@ -99,9 +109,10 @@ class Server:
 
 if name == '__main__':
 
-	if len(sys.argv) == 2:
+	if len(sys.argv) > 1:
 
-		server = Server(server_type = sys.argv[1])
+		# FIXME: use try except to make sure peer0 info is provided
+		server = Server(server_type = sys.argv[1], peer0_ip = sys.argv[2], peer0_port = int(sys.argv[3]))
 
 	else:
 
