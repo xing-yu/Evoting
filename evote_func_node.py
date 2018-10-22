@@ -1,11 +1,12 @@
 # The Evote application
 # Written in functions for multiprocessing
 
+from utility import *
+
 # macros
 
-vote_page = ""	# html file for rendering the voting page
-tally_page = "" # html file for rendering the tally page
-vote_success_page = "" # html file to show user that vote is successfully received
+vote_file = ""	# html file for rendering the voting page
+waiting_file = "" # html file to show user that vote is successfully received
 
 # vote page should have one form
 # action = "submitVote"
@@ -13,24 +14,163 @@ vote_success_page = "" # html file to show user that vote is successfully receiv
 # query value = [the vote]
 # e.g., /submitVote?vote=1
 
-#--------------------------- handle a single request ------------------------------
+#--------------------------- init metadata ----------------------------
 
-def handle_request(parsed_request, conn, addr, lock, meta_data):
+def init_metadata(server):
 
-	# parsed_request: (method, path, version)
-	# conn: socket connection
-	# addr: client address (ip, port)
-	# lock: semaphone
+	from multiprocessing import *
 
-	# handle local request
-	if addr[0] == '127.0.0.1':
+	server.metadata = Manager.dict()
 
-		handle_local_request(parsed_request, conn, lock, meta_data)	
+	# host ip address, str
+	server.metadata['host'] = ''
 
-	# handle peer request
+	# server port, int
+	server.metadata['port'] = 9999
+
+	# peer information, {ip : (port, status)}
+	server.metadata['peer_info'] = {}
+
+	# peer votes, {ip : vote}
+	server.metadata['peer_votes'] = {}
+
+	# peer shares, {ip : share}
+	server.metadata['peer_shares'] = {}
+
+	# vote by local user, int, 0 index, represent which candidate
+	server.metadata['local_vote'] = None
+
+	# vector of shares for (n, n) screct sharing, [int]
+	server.metadata['shares'] = []
+
+	# int
+	# local vote -> binary vector -> int -> masked with peer shares
+	server.metadata['masked_vote'] = None
+
+	# int
+	# all shares s_i satify that s_i >= 0 and s_i < Zm
+	# Zm = 2**vector_len + 1
+	server.metadata['Zm'] = None
+
+	# [int]
+	# value of the sumation of all votes from all nodes
+	# value -> binary vector
+	# a vector of vote count for candidates
+	server.metadata['tally_result'] = None
+
+	# int
+	# number of active peers at tally
+	server.metadata['num_active_peers'] = None
+
+	# int
+	# number of candidates
+	server.metadata['num_candidates'] = None
+
+	# num_candidates * num_active_peers
+	server.metadata['vector_len'] = None
+
+	# (str, int)
+	# peer 0 ip : port
+	server.metadata['peer0'] = None
+
+#--------------------------- identify request ------------------------
+
+def handle_request(parsed_request, conn, addr, lock, metadata):
+
+	from urllib.parse import urlparse
+    from urllib.parse import parse_qs
+
+    # queries
+    q = parse_qs(urlparse(parsed_request[1]).query)
+
+    # request source
+	host = addr[0]
+
+	# request type
+	request_type = q['type'][0]
+
+	# request value
+	request_value = q['value']
+
+	# local requests
+
+	if host == '127.0.0.1':
+
+		if metadata['local_vote'] != None:
+
+			# return tally result page
+			if metadata['tally_result'] == None:
+
+				# unique view, need to implement individually
+				render_result_page(metadata, conn)
+
+			# return waiting page
+			else:
+
+				render_page(metadata, conn, waiting_file)
+
+		# save local user vote
+		elif request_type == 'vote' and metadata['local_vote'] == None:
+
+			save_user_vote(metadata, request_value)
+
+		# return voting page
+		elif metadata['local_vote'] == None and request_type == None:
+
+			# unique view, need to implement individually
+			render_page(metadata, conn, vote_file)
+
+	# host requests
+	elif host == metadata['peer0'][0]
+
+		# start tally
+		if request_type == 'tally':
+
+			publish_shares(metadata, request_value)
+
+		# save node id assigned by peer 0
+		elif request_type == 'id':
+
+			save_node_id(metadata, request_value)
+
+		# update peer information from peer 0
+		elif request_type == 'updates':
+
+			update_peer_info(metadata, request_value)
+
+	# peer requests
 	else:
 
-		handle_peer_request(parsed_request, conn, addr, lock, meta_data)
+		# save share from a peer
+		if request_type == 'share':
+
+			save_peer_share(metadata, request_value)
+
+			# if all shares received
+			if all_peers_shared(metadata):
+
+				# mask local vote
+				create_mask_vote(metadata)
+
+				# publish vote
+				publish_vote(metadata)
+
+		# save vote from a peer
+		elif request_type == 'vote':
+
+			save_peer_vote(metadata, request_value)
+
+			# if all vote received
+			if all_peers_published(metadata):
+
+				# tally result
+				tally_votes(metadata)
+
+				# show tally result
+				render_page(metadata, conn, 'tally')
+
+	# close connection
+	conn.close()
 
 #-------------------------- handle local request (sub) ---------------------------
 def handle_local_request(parsed_request, conn, peer_0, meta_data):

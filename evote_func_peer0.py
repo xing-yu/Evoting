@@ -41,9 +41,11 @@ def handle_peer_request(parsed_request, conn, addr, lock, meta_data):
 
         lock.release()
 
-    elif q['type'][0] == 'voted':
+    elif q['type'][0] == 'vote':
 
         lock.acquire()
+
+        if addr[0] not in meta_data["node_info"]:
 
         
 
