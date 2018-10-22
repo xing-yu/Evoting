@@ -285,7 +285,7 @@ def save_peer_share(metadata, lock, host, request_value):
 
 	lock.release()
 
-#------------------------- tally view function ----------------------
+#------------------------ result view function ----------------------
 
 def render_result_page(metadata, lock, conn):
 
