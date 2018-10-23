@@ -103,7 +103,7 @@ def handle_request(parsed_request, conn, addr, lock, metadata):
 		if metadata['local_vote'] != None:
 
 			# return tally result page
-			if metadata['tally_result'] == None:
+			if metadata['tally_result'] != None:
 
 				# unique view, need to implement individually
 
@@ -121,13 +121,15 @@ def handle_request(parsed_request, conn, addr, lock, metadata):
 			# save local user's vote
 			save_user_vote(metadata, lock, host, request_value)
 
+			# FIXME: send signal to peer 0 with status updates
+
 		# return voting page
 		elif metadata['local_vote'] == None and request_type == None:
 
 			# unique view, need to implement individually
 			render_page(conn, vote_file)
 
-	# host requests
+	# peer 0 requests
 	elif host == metadata['peer0'][0]
 
 		# start tally
@@ -215,7 +217,7 @@ def register(metadata):
 
     request += 'value=' + str(self.metadata['port'])
 
-    request += 'HTTP/1.1\r\n'
+    request += ' HTTP/1.1\r\n'
 
     s.sendall(request.encode())
 
@@ -230,6 +232,9 @@ def register(metadata):
 #--------------------------- updates peer info ----------------------
 # update peer status from peer 0
 # request value: [ip, status, ip, status, ...]
+
+# FIXME: updates could include self ip, ignore that
+# FIXME: also update metadata number of active node at the end
 def update_peer_info(metadata, lock, request_value):
 
 	host, status = None, None

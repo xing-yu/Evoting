@@ -18,7 +18,7 @@ class Server:
 
 			self.module = evote_func_peer0
 
-			# TODO: init meta data for peer 0
+			self.module.init_metadata(self)
 
 		else:
 
@@ -105,7 +105,7 @@ class Server:
 		return request_line.split()
 
 
-#----------------------------- main ------------------------------
+#-------------------------- main ------------------------------
 
 if name == '__main__':
 
