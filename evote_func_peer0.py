@@ -68,12 +68,12 @@ def handle_quest(parsed_request, conn, addr, lock, metadata):
                 # broadcast tally signal
 
                 # first broadcast peer information to all nodes
-                broadcast_peer_info()
+                broadcast_peer_info(metadata, lock)
 
                 # TODO: implement
                 # broadcast number of candidates
                 # broadcast number of active voters
-                broadcast_tally_signal()
+                broadcast_tally_signal(metadata, lock)
 
             else:
 
@@ -215,6 +215,59 @@ def update_node_info(metadata, lock, host, request_value):
         metadata["peer_info"][host] = request_value[0]
 
     lock.release()
+
+#-------------------- broadcast tally signal ---------------
+
+# once the user click tally on the UI
+# peer 0 send out signal to READY nodes to tally
+
+def broadcast_tally_signal(metadata, lock):
+
+    from socket import *
+
+    if metadata["tally"] == True:
+        return
+
+    lock.acquire()
+
+    # FIXME: set a guard that is the tally is True, 
+    # no incomming connection is accepted
+
+    # set tally status to true
+    metadata["tally"] = True
+
+    num_active_peers = 0
+
+    targets = []
+
+    for peer in metadata["peer_info"]:
+
+        if metadata["peer_info"][peer][1] != "READY":
+            continue
+
+        targets.append((peer, metadata["peer_info"][peer][0]))
+
+        num_active_peers += 1
+
+    lock.release()
+
+    request = "GET /tallyinfo?"
+
+    request += "type=tally"
+
+    request += "&value=" + str(num_active_peers)
+
+    request += ' HTTP/1.1\r\n'
+
+    for each in targets
+
+        s = socket(AF_INET, SOCK_STREAM)
+
+        s.connect(each)
+
+        s.sendall(request)
+
+        s.close()
 
 
 

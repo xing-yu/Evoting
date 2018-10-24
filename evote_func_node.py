@@ -138,7 +138,8 @@ def handle_request(parsed_request, conn, addr, lock, metadata):
 			# generate shares and publish to all active peers
 			convert_vote(metadata, lock)
 
-			generate_shares(metadata, lock)
+			# FIXME: save num_active_peers from peer 0
+			generate_shares(metadata, lock, request_value)
 
 			publish_shares(metadata, lock, request_value)
 
