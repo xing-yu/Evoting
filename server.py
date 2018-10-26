@@ -37,6 +37,7 @@ class Server:
 			# FIXME: peer 0 should also give number of candidates
 
 			# register and get node id from peer 0
+			# NOTE: node id is no longer needed
 
 			module.register(metadata)
 
@@ -51,7 +52,7 @@ class Server:
 		self.queue_size = queue_size
 		self.lock = Lock()
 
-	#------------------- start the server -----------------------
+	#---------------- start the server --------------
 
 	def start(self):
 
@@ -76,7 +77,7 @@ class Server:
 
 		self.get_requests()
 
-	#------------------- listen to requests ---------------------
+	#------------- listen to requests ---------------
 
 	def get_requests(self):
 
@@ -94,7 +95,7 @@ class Server:
 
 			process.start()
 
-	#------------------- parse request --------------------------
+	#--------------- parse request ------------------
 
 	# all requests are in HTTP format
 
@@ -105,7 +106,7 @@ class Server:
 		return request_line.split()
 
 
-#-------------------------- main ------------------------------
+#-------------------- main ---------------------------
 
 if name == '__main__':
 

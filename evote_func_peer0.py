@@ -63,21 +63,26 @@ def handle_quest(parsed_request, conn, addr, lock, metadata):
 
         if metadata['num_candidates'] != None:
 
-            if request_type == "tally":
+            if metadata["tally"] == False:
+
+                # return tally button page
+                render_page(conn, tally_file)
+
+            elif request_type == "tally" and metadata["tally"] == False:
 
                 # broadcast tally signal
 
                 # first broadcast peer information to all nodes
                 broadcast_peer_info(metadata, lock)
 
-                # TODO: implement
                 # broadcast number of candidates
                 # broadcast number of active voters
                 broadcast_tally_signal(metadata, lock)
 
             else:
 
-                # TODO: implement
+                # tally has started
+                # show a waiting page
                 render_page(conn, waiting_file)
 
         else:
@@ -87,6 +92,11 @@ def handle_quest(parsed_request, conn, addr, lock, metadata):
             if request_type == "num_candidates":
 
                 save_num_candidates(metadata, lock, request_value)
+
+            else:
+
+                # show a setup page for number of candidates
+                render_page(conn, setup_page)
 
     # peer requests
     else:
