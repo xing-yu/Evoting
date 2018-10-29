@@ -3,14 +3,14 @@
 # reduce redundency
 
 import sys
-from multiprocessing import *
+import multiprocessing
 from socket import *
 
 class Server:
 
 	# server type can be either node or peer0
 
-	def __init__(self, server_type = 'node', peer0_ip = None, peer0_port = None, buff_size = 1024, queue_size = None):
+	def __init__(self, server_type = 'peer0', peer0_ip = None, peer0_port = 9999, buff_size = 1024, backlog = 10):
 
 		if server_type == "peer0":
 
@@ -28,15 +28,12 @@ class Server:
 
 			self.module.init_metadata(self)
 
-			# init metadata
-			module.init_metadata(self)
-
 			# save peer 0 info
 			self.metadata["peer0"] = (peer0_ip, peer0_port)
 
-			# register and get node id from peer 0
+			# register the node to peer 0
 
-			module.register(metadata)
+			self.module.register(self.metadata)
 
 		if not self.metadata:
 
@@ -46,8 +43,8 @@ class Server:
 		self.metadata['type'] = server_type
 
 		self.buff_size = buff_size
-		self.queue_size = queue_size
-		self.lock = Lock()
+		self.backlog = backlog
+		self.lock = multiprocessing.Lock()
 
 	#---------------- start the server --------------
 
@@ -67,7 +64,7 @@ class Server:
 
 		self.server_socket = s
 
-		self.server_socket.listen(self.queue_size)
+		self.server_socket.listen(self.backlog)
 
 		print("The server is ready at " + str(self.metadata['host']) + ": " + str(self.metadata["port"]))
 		print("Sever type is " + self.metadata['type'] + '.')
@@ -105,24 +102,41 @@ class Server:
 
 #-------------------- main ---------------------------
 
-if name == '__main__':
+if __name__ == '__main__':
+
+	import logging
+	logging.basicConfig(level = logging.DEBUG)
+
+	# starting a node server
 
 	if len(sys.argv) > 1:
 
-		# FIXME: use try except to make sure peer0 info is provided
-		server = Server(server_type = sys.argv[1], peer0_ip = sys.argv[2], peer0_port = int(sys.argv[3]))
+		peer0_ip = sys.argv[1]
+
+		server = Server(server_type = 'node', peer0_ip = sys.argv[1])
+
+	elif len(sys.argv) > 2:
+
+		peer0_ip = sys.argv[1]
+
+		peer0_port = int(sys.argv[2])
+
+		server = Server(server_type = 'node', peer0_ip = sys.argv[1], peer0_port = int(sys.argv[2]))
+
+	# starting a peer 0 server
 
 	else:
 
 		server = Server()
 
 	try:
+		logging.info("Server Started")
 
 		server.start()
 
 	except:
 
-		# TODO:log exceptions
+		logging.exception("Unexpected exception")
 
 	finally:
 
@@ -130,6 +144,10 @@ if name == '__main__':
 
 			process.terminate()
 			process.join()
+
+		server.server_socket.close()
+
+		logging.info("Over and Out.")
 
 
 

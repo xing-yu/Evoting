@@ -1,7 +1,10 @@
 # The Evote application
 # Written in functions for multiprocessing
 
+import sys
 from utility import *
+from multiprocessing import *
+from socket import *
 
 # macros
 
@@ -18,14 +21,11 @@ waiting_file = "" # html file to show user that vote is successfully received
 
 def init_metadata(server):
 
-	from multiprocessing import *
-	from socket import *
+	server.metadata = Manager().dict()
 
-	server.metadata = Manager.dict()
-
-	# str
-    # ip
-    server.metadata["ip"] = gethostbyname(getfqdn())
+	# get ip of the node
+	temp = getfqdn()
+	server.metadata["ip"] = gethostbyname(temp)
 
 	# host ip address, str
 	server.metadata['host'] = ''
@@ -87,12 +87,12 @@ def init_metadata(server):
 def handle_request(parsed_request, conn, addr, lock, metadata):
 
 	from urllib.parse import urlparse
-    from urllib.parse import parse_qs
+	from urllib.parse import parse_qs
 
-    # queries
-    q = parse_qs(urlparse(parsed_request[1]).query)
+	# queries
+	q = parse_qs(urlparse(parsed_request[1]).query)
 
-    # request source
+	# request source
 	host = addr[0]
 
 	# request type
@@ -134,7 +134,7 @@ def handle_request(parsed_request, conn, addr, lock, metadata):
 			render_page(conn, vote_file)
 
 	# peer 0 requests
-	elif host == metadata['peer0'][0]
+	elif host == metadata['peer0'][0]:
 
 		# start tally
 		if request_type == 'tally':
@@ -202,41 +202,39 @@ def handle_request(parsed_request, conn, addr, lock, metadata):
 # this function register node with peer 0
 
 def register(metadata):
-	from socket import *
-    import sys
 
-    # initialize a socket to send node info to peer 0
-    # peer 0 must be working
+	# initialize a socket to send node info to peer 0
+	# peer 0 must be working
 
-    s = socket(AF_INET, SOCK_STREAM)
+	s = socket(AF_INET, SOCK_STREAM)
 
-    try:
-            
-        s.connect(self.metadata['peer0'])
-        
-    except:
+	try:
+			
+		s.connect(self.metadata['peer0'])
+		
+	except:
 
-        print("Cannot connect to peer 0 due to failure of creating a socket!")
+		print("Cannot connect to peer 0!")
 
-        sys.exit(-1)
+		sys.exit(-1)
 
-    # create a request to send port information to peer 0
+	# create a request to send port information to peer 0
 
-    request = "GET /nodeinfo?"
+	request = "GET /nodeinfo?"
 
-    request += 'type=registration&'
+	request += 'type=registration&'
 
-    request += 'value=' + str(self.metadata['port'])
+	request += 'value=' + str(self.metadata['port'])
 
-    request += ' HTTP/1.1\r\n'
+	request += ' HTTP/1.1\r\n'
 
-    s.sendall(request.encode())
+	s.sendall(request.encode())
 
-    response = s.recv(1024).decode()
+	response = s.recv(1024).decode()
 
-    print(response)
+	print(response)
 
-    s.close()    
+	s.close()    
 
 #---------------- updates peer info ---------------------
 # receive updates of peer status from peer 0
@@ -364,8 +362,6 @@ def publish_shares(metadata, lock, request_value):
 	# the shares won't be modified
 	# the peer info will not be modified theoretically
 
-	from socket import *
-
 	i = 0
 
 	for peer in metadata["peer_info"].keys():
@@ -469,8 +465,6 @@ def generate_mask_vote(metadata, lock):
 # publish vote once all shares from all peers are received
 
 def publish_vote(metadata, lock):
-	
-	from socket import *
 
 	# send a share to each peer
 
@@ -600,8 +594,6 @@ def save_tally_info(metadata, lock, request_value):
 # once the node has received and save user's vote
 # send a status update to peer 0 from ONLINE to READY
 def status_update(metadata, lock):
-
-	from socket import *
 
 	request = "GET /updatenode?"
 

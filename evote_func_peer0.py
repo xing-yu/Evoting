@@ -1,15 +1,14 @@
 
 # utility
 from utility import *
+from multiprocessing import *
+from socket import *
 
 #----------------------- init metadata --------------------
 
 def init_metadata(server):
 
-    from multiprocessing import *
-    from socket import *
-
-    server.metadata = Manager.dict()
+    server.metadata = Manager().dict()
 
     # {ip: (port, status)}
     # {str: (int, str)}
@@ -30,7 +29,7 @@ def init_metadata(server):
 
     # str
     # ip
-    server.metadata["ip"] = gethostbyname(getfqdn())
+    server.metadata["host"] = gethostbyname(getfqdn())
 
     # int
     # port number
@@ -166,8 +165,6 @@ def register_node(metadata, lock, host, conn, request_value):
 
 def broadcast_peer_info(metadata, lock):
 
-    from socket import *
-
     request = "GET /updateinfo?"
 
     request += "type=updates"
@@ -230,8 +227,6 @@ def update_node_info(metadata, lock, host, request_value):
 # peer 0 send out signal to READY nodes to tally
 
 def broadcast_tally_signal(metadata, lock):
-
-    from socket import *
 
     # set a guard that is the tally is True, 
     # no incomming connection is accepted
