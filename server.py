@@ -10,7 +10,7 @@ class Server:
 
 	# server type can be either node or peer0
 
-	def __init__(self, server_type = 'peer0', peer0_ip = None, peer0_port = 9999, buff_size = 1024, backlog = 10):
+	def __init__(self, server_type = 'peer0', peer0_ip = None, peer0_port = 9999, buff_size = 1024, backlog = 1):
 
 		if server_type == "peer0":
 
@@ -74,6 +74,9 @@ class Server:
 	#------------- listen to requests ---------------
 
 	def get_requests(self):
+		import logging
+
+		self.logger = logging.getLogger("server")
 
 		while True:
 
@@ -83,11 +86,16 @@ class Server:
 
 			parsed_request = self.parse_request(request)
 
+			print(addr[0])
+			print(request)
+
 			process = multiprocessing.Process(target = self.module.handle_request, args = (parsed_request, conn, addr, self.lock, self.metadata))
 
 			process.daemon = True
 
 			process.start()
+
+			self.logger.debug("Statted process %r", process)
 
 	#--------------- parse request ------------------
 

@@ -4,6 +4,11 @@ from utility import *
 from multiprocessing import *
 from socket import *
 
+# GUI
+waiting_file = "./html/peer0_wait.html"
+tally_file = "./html/peer0_tally.html"
+setup_file = "./html/peer0_setup.html"
+
 #----------------------- init metadata --------------------
 
 def init_metadata(server):
@@ -41,7 +46,7 @@ def init_metadata(server):
 
 #----------------------- handle quest ---------------------
 
-def handle_quest(parsed_request, conn, addr, lock, metadata):
+def handle_request(parsed_request, conn, addr, lock, metadata):
 
     from urllib.parse import urlparse
     from urllib.parse import parse_qs
@@ -57,32 +62,49 @@ def handle_quest(parsed_request, conn, addr, lock, metadata):
     # request source
     host = addr[0]
 
-    # request type
-    request_type = q["type"][0]
+    # request_type
+    if "type" not in q:
+        request_type = None
+    else:
+        request_type = q["type"][0]
 
     # request value
-    request_value = q["value"]
+    if "value" not in q:
+        request_value = None
+    else:
+        request_value = q["value"]
+
+    print("request type: %s"%request_type)
+    print("request values: %s"%request_value)
 
     # local request
-    if host == '127.0.0.1':
+    if host == metadata["host"]:
 
         if metadata['num_candidates'] != None:
 
             if metadata["tally"] == False:
 
-                # return tally button page
-                render_page(conn, tally_file)
+                # start tally process
 
-            elif request_type == "tally" and metadata["tally"] == False:
+                if request_type == "tally":
 
-                # received tally signal from user input
+                    render_page(conn, waiting_file)
 
-                # first broadcast peer information to all nodes
-                broadcast_peer_info(metadata, lock)
+                    # received tally signal from user input
 
-                # broadcast number of candidates
-                # broadcast number of active voters
-                broadcast_tally_signal(metadata, lock)
+                    # first broadcast peer information to all nodes
+                    broadcast_peer_info(metadata, lock)
+
+                    # broadcast number of candidates
+                    # broadcast number of active voters
+                    broadcast_tally_signal(metadata, lock)
+
+                    print(metadata["tally"])
+                    print("tally signal sent!")
+
+                # render tally button page
+                else:
+                    render_page(conn, tally_file)
 
             else:
 
@@ -101,7 +123,7 @@ def handle_quest(parsed_request, conn, addr, lock, metadata):
             else:
 
                 # show a setup page for number of candidates
-                render_page(conn, setup_page)
+                render_page(conn, setup_file)
 
     # peer requests
     else:
@@ -135,6 +157,8 @@ def save_num_candidates(metadata, lock, request_value):
 
     lock.release()
 
+    print("Number of candidates save is %s"%(num_candidates))
+
 #--------------------- register new node ------------------
 
 # save peer registration information and assign node id
@@ -164,6 +188,10 @@ def register_node(metadata, lock, host, conn, request_value):
 # broadcast peers information to all peers
 
 def broadcast_peer_info(metadata, lock):
+
+    if len(metadata["peer_info"].keys()) == 0:
+        print("No active nodes right now!")
+        return
 
     request = "GET /updateinfo?"
 

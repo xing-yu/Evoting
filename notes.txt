@@ -13,6 +13,31 @@ Accept-Encoding: gzip, deflate
 
 '
 
+safari
+
+b'GET / HTTP/1.1\r\n
+Host: 192.168.1.73:9001\r\n
+Upgrade-Insecure-Requests: 1\r\n
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\n
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.0 Safari/605.1.15\r\n
+Accept-Language: en-us\r\n
+Accept-Encoding: gzip, deflate\r\n
+Connection: keep-alive\r\n\r\n'
+DEBUG:server:Statted process <Process(Process-2, started daemon)>
+		HTTP/1.1 200 OK
+
+chrome
+
+b'GET /favicon.ico HTTP/1.1\r\n
+Host: 192.168.1.73:9001\r\n
+Connection: keep-alive\r\n
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36\r\n
+Accept: image/webp,image/apng,image/*,*/*;q=0.8\r\n
+Referer: http://192.168.1.73:9001/\r\nAccept-Encoding: gzip, deflate\r\n
+Accept-Language: en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7,zh-TW;q=0.6\r\n\r\n'
+DEBUG:server:Statted process <Process(Process-6, started daemon)>
+		HTTP/1.1 200 OK
+
 #------------------------------- design of metadata for nodes ----------------------------
 
 1. metadata: Manager.dict()

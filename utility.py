@@ -4,19 +4,23 @@
 
 def render_page(conn, file):
 
-	header = b"""\
-		HTTP/1.1 200 OK
+	header = """HTTP/1.1 200 OK
 
 		"""
+	try:
+		content = open(file, 'r').read()
 
-	content = open(file, 'r').read()
+	except:
+
+		print("Cannot open GUI files.")
 
 	response = header + content  + '''
 
 	'''
 
+	# print(response)
+
 	conn.sendall(response.encode())
+	print(file)
 
-
-	
-
+	print("Done sending response!")
