@@ -22,7 +22,7 @@ def init_metadata(server):
 
     server.metadata["num_candidates"] = None
 
-    # int
+    # {ip: id}
     # {str: int}
     # current peer ide
     # starting from 0
