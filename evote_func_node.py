@@ -14,13 +14,18 @@ waiting_file = "" # html file to show user that vote is successfully received
 # query value = [the vote]
 # e.g., /submitVote?vote=1
 
-#--------------------------- init metadata ----------------------------
+#------------------- init metadata ----------------------
 
 def init_metadata(server):
 
 	from multiprocessing import *
+	from socket import *
 
 	server.metadata = Manager.dict()
+
+	# str
+    # ip
+    server.metadata["ip"] = gethostbyname(getfqdn())
 
 	# host ip address, str
 	server.metadata['host'] = ''
@@ -53,7 +58,7 @@ def init_metadata(server):
 
 	# int
 	# all shares s_i satify that s_i >= 0 and s_i < Zm
-	# Zm = 2**vector_len + 1
+	# Zm = 2**vector_len
 	server.metadata['Zm'] = None
 
 	# str
@@ -77,7 +82,7 @@ def init_metadata(server):
 	# peer 0 ip : port
 	server.metadata['peer0'] = None
 
-#--------------------------- identify request ------------------------
+#----------------- identify request ---------------------
 
 def handle_request(parsed_request, conn, addr, lock, metadata):
 
@@ -105,9 +110,7 @@ def handle_request(parsed_request, conn, addr, lock, metadata):
 			# return tally result page
 			if metadata['tally_result'] != None:
 
-				# unique view, need to implement individually
-
-				# TODO: implement
+				# the result page shows how many votes each candidate gets
 				render_result_page(metadata, lock)
 
 			# return waiting page
@@ -121,7 +124,8 @@ def handle_request(parsed_request, conn, addr, lock, metadata):
 			# save local user's vote
 			save_user_vote(metadata, lock, host, request_value)
 
-			# FIXME: send signal to peer 0 with status updates
+			# send status update to peer 0
+			status_update(metadata, lock)
 
 		# return voting page
 		elif metadata['local_vote'] == None and request_type == None:
@@ -135,12 +139,16 @@ def handle_request(parsed_request, conn, addr, lock, metadata):
 		# start tally
 		if request_type == 'tally':
 
+			# save node id/ number of active peers from peer 0
+			save_tally_info(metadata, lock, request_value)
+
 			# generate shares and publish to all active peers
 			convert_vote(metadata, lock)
 
-			# FIXME: save num_active_peers from peer 0
+			# generate shares for all peers
 			generate_shares(metadata, lock, request_value)
 
+			# publish shares
 			publish_shares(metadata, lock, request_value)
 
 		# update peer information from peer 0
@@ -189,8 +197,10 @@ def handle_request(parsed_request, conn, addr, lock, metadata):
 	# close connection
 	conn.close()
 
-#-------------------------- register function -----------------------
+#---------------- register function ---------------------
+
 # this function register node with peer 0
+
 def register(metadata):
 	from socket import *
     import sys
@@ -222,20 +232,17 @@ def register(metadata):
 
     s.sendall(request.encode())
 
-    node_id = s.recv(1024).decode()
+    response = s.recv(1024).decode()
 
-    self.metadata["node_id"] = int(node_id)
-
-    print("Node registration is successful! The node id is " + node_id)
+    print(response)
 
     s.close()    
 
-#--------------------------- updates peer info ----------------------
-# update peer status from peer 0
+#---------------- updates peer info ---------------------
+# receive updates of peer status from peer 0
+# and store the info in local metadata
 # request value: [ip, status, ip, status, ...]
 
-# FIXME: updates could include self ip, ignore that
-# FIXME: also update metadata number of active node at the end
 def update_peer_info(metadata, lock, request_value):
 
 	host, status = None, None
@@ -246,13 +253,15 @@ def update_peer_info(metadata, lock, request_value):
 		else:
 			status = value
 
-			lock.acquire()
+			if host != metadata['ip']:
 
-			metadata['peer_info'][host][1] = status
+				lock.acquire()
 
-			lock.release()
+				metadata['peer_info'][host][1] = status
+
+				lock.release()
 	
-#------------------------- save user vote ---------------------------
+#------------------ save user vote -----------------------
 # save local user's vote
 # the number indicates which candidate the user voted for
 def save_user_vote(metadata, lock, request_value):
@@ -263,7 +272,7 @@ def save_user_vote(metadata, lock, request_value):
 
 	lock.release()
 
-#------------------------- save peer vote ---------------------------
+#------------------ save peer vote -----------------------
 # request_value: [value]
 def save_peer_vote(metadata, lock, host, request_value):
 
@@ -277,7 +286,7 @@ def save_peer_vote(metadata, lock, host, request_value):
 
 	lock.release()
 
-#------------------------- save peer share --------------------------
+#----------------- save peer share -----------------------
 # request_value: [value]
 def save_peer_share(metadata, lock, host, request_value):
 
@@ -291,7 +300,7 @@ def save_peer_share(metadata, lock, host, request_value):
 
 	lock.release()
 
-#------------------------ result view function ----------------------
+#--------------- result view function --------------------
 
 def render_result_page(metadata, lock, conn):
 
@@ -325,7 +334,7 @@ def render_result_page(metadata, lock, conn):
 
 	conn.sendall(content.encode())
 
-#---------------------- tally function ------------------------------
+#------------------ tally function -----------------------
 
 def tally_votes(metadata, lock):
 
@@ -344,7 +353,7 @@ def tally_votes(metadata, lock):
 
 	lock.release()
 
-#------------------------- publishe share ---------------------------
+#------------------ publishe share -----------------------
 
 # broadcast shares to peers
 # triggered by signal from peer 0
@@ -389,7 +398,7 @@ def publish_shares(metadata, lock, request_value):
 
 		i + 1
 
-#------------------------- convert vote -----------------------------
+#------------------- convert vote ------------------------
 # convert local vote into the binary vector
 # the binary vector is converted into int
 
@@ -408,7 +417,7 @@ def convert_vote(metadata, lock):
 	metadata["convert_vote"] = int(''.join(binary_vector), 2)
 
 	lock.release()
-#------------------------- generate share ---------------------------
+#------------------ generate share -----------------------
 	
 # generate shares for all peers
 def generate_shares(metadata, lock):
@@ -437,7 +446,7 @@ def generate_shares(metadata, lock):
 
 	lock.release()
 
-#-------------------------- mask vote -------------------------------
+#-------------------- mask vote --------------------------
 
 # mask own vote once all shares are received from all peers
 
@@ -455,7 +464,7 @@ def generate_mask_vote(metadata, lock):
 
 	lock.release()
 
-#------------------------ publish vote ------------------------------
+#------------------ publish vote -------------------------
 
 # publish vote once all shares from all peers are received
 
@@ -490,7 +499,7 @@ def publish_vote(metadata, lock):
 
 		s.close()
 
-#------------------------- check if all shared ----------------------
+#--------------- check if all shared ---------------------
 
 # true is all peers' shares received
 
@@ -523,7 +532,7 @@ def all_peers_shared(metadata, lock):
 
 		return False
 
-#-------------------------- check if all published ------------------
+#--------------- check if all published ------------------
 
 # true is all peers' votes received
 
@@ -553,6 +562,66 @@ def all_peers_published(metadata, lock):
 	else:
 
 		return False
+
+#-------------------- save node id -----------------------
+
+# save number of active nodes, number of candidates, id of the node from peer 0 before generate shares at tally signal received
+
+# "GET /tallyinfo?type=fally&value=num_active_peers&value=num_candidates&value=id"
+
+def save_tally_info(metadata, lock, request_value):
+
+	num_active_peers = int(request_value[0])
+
+	num_candidates = int(request_value[1])
+
+	node_id = int(request_value[2])
+
+	# save following
+	# number of active nodes
+	# number of candidates
+	# node id
+	# generate Zm
+
+	lock.acquire()
+
+	metadata["Zm"] = pow(2, num_candidates * num_active_peers) 
+
+	metadata["num_candidates"] = num_candidates
+
+	metadata["num_active_peers"] = num_active_peers
+
+	metadata["node_id"] = node_id
+
+	lock.release()
+
+#-------------------- update status to peer 0 -------------
+
+# once the node has received and save user's vote
+# send a status update to peer 0 from ONLINE to READY
+def status_update(metadata, lock):
+
+	from socket import *
+
+	request = "GET /updatenode?"
+
+	request += "type=update"
+
+	request += "&value=READY"
+
+	request += ' HTTP/1.1\r\n'
+
+	s = socket(AF_INET, SOCK_STREAM)
+
+	s.connect(metadata["peer0"])
+
+	s.sendall(request.encode())
+
+	s.close()
+
+
+
+
 
 
 

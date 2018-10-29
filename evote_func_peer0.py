@@ -23,9 +23,10 @@ def init_metadata(server):
     server.metadata["num_candidates"] = None
 
     # int
+    # {str: int}
     # current peer ide
     # starting from 0
-    server.metadata["node_id"] = 0
+    server.metadata["peer_id"] = {}
 
     # str
     # ip
@@ -45,6 +46,11 @@ def handle_quest(parsed_request, conn, addr, lock, metadata):
 
     from urllib.parse import urlparse
     from urllib.parse import parse_qs
+
+    # if tally started, no incoming request will be accepted
+    if metadata["tally"] == True:
+        conn.close()
+        return
 
     # queries
     q = parse_qs(urlparse(parsed_request[1]).query)
@@ -70,7 +76,7 @@ def handle_quest(parsed_request, conn, addr, lock, metadata):
 
             elif request_type == "tally" and metadata["tally"] == False:
 
-                # broadcast tally signal
+                # received tally signal from user input
 
                 # first broadcast peer information to all nodes
                 broadcast_peer_info(metadata, lock)
@@ -87,7 +93,7 @@ def handle_quest(parsed_request, conn, addr, lock, metadata):
 
         else:
 
-            # save number of candidates
+            # save number of candidates from user input on peer 0 machine
 
             if request_type == "num_candidates":
 
@@ -105,7 +111,7 @@ def handle_quest(parsed_request, conn, addr, lock, metadata):
 
         if request_type == "registration":
 
-            assign_node_id(metadata, lock, host, conn, request_value)
+            register_node(metadata, lock, host, conn, request_value)
 
         elif request_type == "update":
 
@@ -130,15 +136,13 @@ def save_num_candidates(metadata, lock, request_value):
 
     lock.release()
 
-#------------------------ assign node id ------------------
+#--------------------- register new node ------------------
 
 # save peer registration information and assign node id
 
-# FIXME: id is no long needed, ip will be unique enough
+# NOTE: id is needed for tallying to create order of votes in the binary vector
 
-def assign_node_id(metadata, lock, host, conn, request_value):
-
-    node_id = None
+def register_node(metadata, lock, host, conn, request_value):
 
     # register node information
 
@@ -148,19 +152,13 @@ def assign_node_id(metadata, lock, host, conn, request_value):
 
         metadata["peer_info"][host] = (int(request_value[0]), "ONLINE")
 
-        node_id = metadata["node_id"]
-
-        metadata["node_id"] += 1
-
     lock.release()
 
-    # response node id back to the peer
+    # response success message back to the node
 
-    if node_id != None:
+    response = byte("Registration successful!")
 
-        response = byte(str(node_id))
-
-        conn.sendall(response)
+    conn.sendall(response)
 
 #------------------------ broadcast peer info -------------
 
@@ -178,7 +176,7 @@ def broadcast_peer_info(metadata, lock):
 
     lock.acquire()
 
-    for peer in metadata["peer_info"]:
+    for peer in metadata["peer_info"].keys():
 
         # generate one request for all peers
         request += '&'
@@ -235,20 +233,24 @@ def broadcast_tally_signal(metadata, lock):
 
     from socket import *
 
+    # set a guard that is the tally is True, 
+    # no incomming connection is accepted
+
     if metadata["tally"] == True:
         return
 
-    lock.acquire()
-
-    # FIXME: set a guard that is the tally is True, 
-    # no incomming connection is accepted
-
-    # set tally status to true
-    metadata["tally"] = True
+    # initiate  targets, number of active nodes
+    targets = []
 
     num_active_peers = 0
 
-    targets = []
+    lock.acquire()
+
+    # get number of candidates
+    num_candidates = metadata["num_candidates"]
+
+    # set tally status to true
+    metadata["tally"] = True
 
     for peer in metadata["peer_info"]:
 
@@ -267,15 +269,24 @@ def broadcast_tally_signal(metadata, lock):
 
     request += "&value=" + str(num_active_peers)
 
-    request += ' HTTP/1.1\r\n'
+    request += "&value=" + str(num_candidates)
 
-    for each in targets
+    # send number of active nodes, number of candidates, id,  and tally signal to each active node
+
+    # NOTE: maybe also keep of record of the id
+
+    for idx, each in enumerate(targets):
+        temp = request
+
+        temp += "&value=" + str(idx)
+
+        temp += ' HTTP/1.1\r\n'
 
         s = socket(AF_INET, SOCK_STREAM)
 
         s.connect(each)
 
-        s.sendall(request)
+        s.sendall(temp)
 
         s.close()
 

@@ -34,10 +34,7 @@ class Server:
 			# save peer 0 info
 			self.metadata["peer0"] = (peer0_ip, peer0_port)
 
-			# FIXME: peer 0 should also give number of candidates
-
 			# register and get node id from peer 0
-			# NOTE: node id is no longer needed
 
 			module.register(metadata)
 
