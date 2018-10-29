@@ -64,7 +64,7 @@ class Server:
 
 		self.server_socket = s
 
-		self.server_socket.listen(self.backlog)
+		self.server_socket.listen()
 
 		print("The server is ready at " + str(self.metadata['host']) + ": " + str(self.metadata["port"]))
 		print("Sever type is " + self.metadata['type'] + '.')
@@ -86,7 +86,7 @@ class Server:
 
 			parsed_request = self.parse_request(request)
 
-			print(addr[0])
+			print("The client is at %s: %s"%(addr[0], addr[1]))
 			print(request)
 
 			process = multiprocessing.Process(target = self.module.handle_request, args = (parsed_request, conn, addr, self.lock, self.metadata))

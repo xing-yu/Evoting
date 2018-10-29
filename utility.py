@@ -4,7 +4,7 @@
 
 def render_page(conn, file):
 
-	header = """HTTP/1.1 200 OK
+	header = """HTTP/1.0 200 OK
 
 		"""
 	try:
