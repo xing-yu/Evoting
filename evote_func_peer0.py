@@ -92,9 +92,11 @@ def handle_request(parsed_request, conn, addr, lock, metadata):
 
                     # received tally signal from user input
 
+                    # TODO: need testing
                     # first broadcast peer information to all nodes
                     broadcast_peer_info(metadata, lock)
 
+                    # TODO: need testing
                     # broadcast number of candidates
                     # broadcast number of active voters
                     broadcast_tally_signal(metadata, lock)
@@ -104,6 +106,7 @@ def handle_request(parsed_request, conn, addr, lock, metadata):
 
                 # render tally button page
                 else:
+
                     render_page(conn, tally_file)
 
             else:
@@ -132,10 +135,12 @@ def handle_request(parsed_request, conn, addr, lock, metadata):
 
         if request_type == "registration":
 
+            # TODO: need testing
             register_node(metadata, lock, host, conn, request_value)
 
         elif request_type == "update":
 
+            # TODO: need testing
             # update a node from ONLINE to READY
             update_node_info(metadata, lock, request_value)
 
