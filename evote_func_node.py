@@ -31,7 +31,7 @@ def init_metadata(server):
 	server.metadata['host'] = ''
 
 	# server port, int
-	server.metadata['port'] = 9999
+	server.metadata['port'] = 9001
 
 	# peer information, {ip : (port (int), status (str))}
 	# status:
@@ -208,15 +208,21 @@ def register(metadata):
 
 	s = socket(AF_INET, SOCK_STREAM)
 
+	print(metadata['peer0'])
+
+	s.connect(metadata['peer0'])
+
+	'''
 	try:
 			
-		s.connect(self.metadata['peer0'])
+		s.connect(metadata['peer0'])
 		
 	except:
 
 		print("Cannot connect to peer 0!")
 
 		sys.exit(-1)
+	'''
 
 	# create a request to send port information to peer 0
 

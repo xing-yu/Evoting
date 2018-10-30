@@ -123,6 +123,10 @@ def handle_request(parsed_request, conn, addr, lock, metadata):
 
                 save_num_candidates(metadata, lock, request_value)
 
+                # after saving number of candidates
+                # render tally page
+                render_page(conn, fally_file)
+
             else:
 
                 # show a setup page for number of candidates
