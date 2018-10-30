@@ -20,7 +20,9 @@ def init_metadata(server):
     # status: ONLINE, READY
 
     server.metadata["peer_info"] = {}
-
+    
+    # int
+	# number of candidates for vote
     server.metadata["num_candidates"] = None
 
     # {ip: id}
@@ -252,17 +254,23 @@ def broadcast_peer_info(metadata, lock):
 # update node information once the node has voted
 
 # status from "ONLINE" to "READY"
-
+# {ip: (port, status)}
 # request_value = ['READY']
 def update_node_info(metadata, lock, host, request_value):
 
     lock.acquire()
+    
+    temp = metadata["peer_info"]
 
-    if host in metadata["peer_info"]:
+    if host in temp:
 
-        metadata["peer_info"][host] = request_value[0]
+        temp[host][1] = request_value[0]
+        
+    metadata["peer_info"] = temp
 
     lock.release()
+    
+    print("The node at %s is %s"%(host, request_value[0]))
 
 #-------------------- broadcast tally signal ---------------
 

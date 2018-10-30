@@ -96,10 +96,16 @@ def handle_request(parsed_request, conn, addr, lock, metadata):
 	host = addr[0]
 
 	# request type
-	request_type = q['type'][0]
+	if "type" not in q:
+		request_type = None
+	else:
+		request_type = q['type'][0]
 
 	# request value
-	request_value = q['value']
+	if "type" not in q:
+		request_value = None
+	else:
+		request_value = q['value']
 
 	# local requests
 
@@ -119,24 +125,32 @@ def handle_request(parsed_request, conn, addr, lock, metadata):
 				render_page(conn, waiting_file)
 
 		# save local user vote
-		elif request_type == 'vote' and metadata['local_vote'] == None:
+		# elif request_type == 'vote' and metadata['local_vote'] == None:
+		else:
+			
+			# save local user vote
+			
+			if request_type == 'vote':
+		
+				# save local user's vote
+				save_user_vote(metadata, lock, host, request_value)
 
-			# save local user's vote
-			save_user_vote(metadata, lock, host, request_value)
+				# send status update to peer 0
+				status_update(metadata, lock)
 
-			# send status update to peer 0
-			status_update(metadata, lock)
+			# return voting page
+			
+			else:
 
-		# return voting page
-		elif metadata['local_vote'] == None and request_type == None:
-
-			# unique view, need to implement individually
-			render_page(conn, vote_file)
+				# unique view, need to implement individually
+				render_page(conn, vote_file)
 
 	# peer 0 requests
 	elif host == metadata['peer0'][0]:
 
 		# start tally
+		# FIXME: add a guard
+		# if tally signal is already received, the node shall not tally again
 		if request_type == 'tally':
 
 			# save node id/ number of active peers from peer 0
@@ -165,7 +179,7 @@ def handle_request(parsed_request, conn, addr, lock, metadata):
 		if request_type == 'share':
 
 			# save peer share
-			save_peer_share(metadata,lock, host, request_value)
+			save_peer_share(metadata, lock, host, request_value)
 
 			# if all shares received
 			# NOTE: could make the function faster by storing number of peers that already shared
@@ -208,21 +222,19 @@ def register(metadata):
 
 	s = socket(AF_INET, SOCK_STREAM)
 
-	print(metadata['peer0'])
+	print("Trying to connect and register to peer 0 at %s:%s" % (metadata['peer0'][0], metadata['peer0'][1]))
 
-	s.connect(metadata['peer0'])
+	#s.connect(metadata['peer0'])
 
-	'''
 	try:
 			
 		s.connect(metadata['peer0'])
 		
 	except:
 
-		print("Cannot connect to peer 0!")
+		print("Failed to connect to peer 0!")
 
 		sys.exit(-1)
-	'''
 
 	# create a request to send port information to peer 0
 
@@ -249,7 +261,18 @@ def register(metadata):
 
 def update_peer_info(metadata, lock, request_value):
 
+	# NOTE: currently, node only keeps status information of all peers
+	# 		no port information is kept. 
+	# 		if port number is consistent across all peers
+	#		then it is not necessary
+
 	host, status = None, None
+
+	lock.acquire()
+	
+	temp = metadata['peer_info']
+	
+	local_ip = metadata['ip']
 
 	for idx, value in enumerate(request_value):
 		if idx % 2 == 0:
@@ -257,13 +280,14 @@ def update_peer_info(metadata, lock, request_value):
 		else:
 			status = value
 
-			if host != metadata['ip']:
+			# exclude self related information
+			if host != local_ip:
 
-				lock.acquire()
+				temp[host] = (metadata['port'], status)
+				
+	metadta['peer_info'] = temp
 
-				metadata['peer_info'][host][1] = status
-
-				lock.release()
+	lock.release()
 	
 #------------------ save user vote -----------------------
 # save local user's vote
@@ -285,8 +309,12 @@ def save_peer_vote(metadata, lock, host, request_value):
 		return
 
 	lock.acquire()
+	
+	temp = metadata["peer_votes"]
 
-	metadata["peer_votes"][host] = int(request_value[0])
+	temp[host] = int(request_value[0])
+	
+	metadata["peer_votes"] = temp
 
 	lock.release()
 
@@ -299,8 +327,12 @@ def save_peer_share(metadata, lock, host, request_value):
 		return
 
 	lock.acquire()
+	
+	temp = metadata["peer_shares"]
 
-	metadata['peer_shares'][host] = int(request_value[0])
+	temp[host] = int(request_value[0])
+	
+	metadata["peer_shares"] = temp
 
 	lock.release()
 
