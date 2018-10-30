@@ -66,7 +66,7 @@ class Server:
 
 		self.server_socket.listen()
 
-		print("The server is ready at " + str(self.metadata['host']) + ": " + str(self.metadata["port"]))
+		print("The server is ready at " + str(self.metadata['ip']) + ": " + str(self.metadata["port"]))
 		print("Sever type is " + self.metadata['type'] + '.')
 
 		self.get_requests()

@@ -31,7 +31,7 @@ def init_metadata(server):
 	server.metadata['host'] = ''
 
 	# server port, int
-	server.metadata['port'] = 9001
+	server.metadata['port'] = 9000
 
 	# peer information, {ip : (port (int), status (str))}
 	# status:

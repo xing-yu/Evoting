@@ -188,7 +188,7 @@ def register_node(metadata, lock, host, conn, request_value):
 
     # response success message back to the node
 
-    response = byte("Registration successful!")
+    response = b"Registration successful!"
 
     conn.sendall(response)
 
