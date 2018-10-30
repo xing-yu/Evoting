@@ -178,22 +178,19 @@ def save_num_candidates(metadata, lock, request_value):
 
 def register_node(metadata, lock, host, conn, request_value):
 
-    import time
+    # import time
     # register node information
 
     lock.acquire()
 
-    #server.peer_info[time.time()] = (host, int(request_value[0]), "ONLINE")
-
     temp = metadata["peer_info"]
 
-    temp[time.time()] = (host, int(request_value[0]), "ONLINE")
+    temp[host] = (int(request_value[0]), "ONLINE")
 
     metadata["peer_info"] = temp
 
     lock.release()
 
-    print("step2")
     # response success message back to the node
 
     print(metadata["peer_info"])
