@@ -230,7 +230,7 @@ def register(metadata):
 
 	request += 'type=registration&'
 
-	request += 'value=' + str(self.metadata['port'])
+	request += 'value=' + str(metadata['port'])
 
 	request += ' HTTP/1.1\r\n'
 
