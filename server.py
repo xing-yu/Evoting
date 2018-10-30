@@ -123,17 +123,15 @@ if __name__ == '__main__':
 
 		server = Server(server_type = 'node', peer0_ip = sys.argv[1])
 
-	# starting a peer 0 server
+	# starting a node server with a different peer 0 port
 
-	else:
+	elif len(sys.argv) == 3:
 
-		# peer0_ip = sys.argv[1]
+		peer0_ip = sys.argv[1]
 
-		# peer0_port = int(sys.argv[2])
+		peer0_port = int(sys.argv[2])
 
-		# server = Server(server_type = 'node', peer0_ip = sys.argv[1], peer0_port = int(sys.argv[2]))
-
-		server = Server(server_type = 'peer0')
+		server = Server(server_type = 'node', peer0_ip = sys.argv[1], peer0_port = int(sys.argv[2]))
 
 	# starting a peer 0 server
 
