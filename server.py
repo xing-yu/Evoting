@@ -46,6 +46,8 @@ class Server:
 		self.backlog = backlog
 		self.lock = multiprocessing.Lock()
 
+		print(self.metadata)
+
 	#---------------- start the server --------------
 
 	def start(self):
