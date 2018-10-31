@@ -14,8 +14,8 @@ def init_metadata(server):
 
     server.metadata = Manager().dict()
 
-    # {ip: (port, status)}
-    # {str: (int, str)}
+    # {ip: [port, status]}
+    # {str: [int, str]}
     # peer information
     # status: ONLINE, READY
 
@@ -186,7 +186,7 @@ def register_node(metadata, lock, host, conn, request_value):
 
     temp = metadata["peer_info"]
 
-    temp[host] = (int(request_value[0]), "ONLINE")
+    temp[host] = [int(request_value[0]), "ONLINE"]
 
     metadata["peer_info"] = temp
 
@@ -217,6 +217,8 @@ def broadcast_peer_info(metadata, lock):
     targets = []
 
     lock.acquire()
+
+    # FIXME: should we ignore none ready nodes?
 
     for peer in metadata["peer_info"].keys():
 
@@ -254,7 +256,7 @@ def broadcast_peer_info(metadata, lock):
 # update node information once the node has voted
 
 # status from "ONLINE" to "READY"
-# {ip: (port, status)}
+# {ip: [port, status]}
 # request_value = ['READY']
 def update_node_info(metadata, lock, host, request_value):
 

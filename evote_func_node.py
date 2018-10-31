@@ -33,7 +33,7 @@ def init_metadata(server):
 	# server port, int
 	server.metadata['port'] = 9000
 
-	# peer information, {ip : (port (int), status (str))}
+	# peer information, {ip : [port (int), status (str)]}
 	# status:
 	# ONLINE -> registered with peer 0
 	# READY -> vote acquired and ready for tally
@@ -283,7 +283,7 @@ def update_peer_info(metadata, lock, request_value):
 			# exclude self related information
 			if host != local_ip:
 
-				temp[host] = (metadata['port'], status)
+				temp[host] = [metadata['port'], status]
 				
 	metadta['peer_info'] = temp
 
