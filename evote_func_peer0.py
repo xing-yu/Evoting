@@ -149,7 +149,7 @@ def handle_request(parsed_request, conn, addr, lock, metadata):
 
             # TODO: need testing
             # update a node from ONLINE to READY
-            update_node_info(metadata, lock, request_value)
+            update_node_info(metadata, lock, host, request_value)
 
 
     # close connection

@@ -133,7 +133,7 @@ def handle_request(parsed_request, conn, addr, lock, metadata):
 			if request_type == 'vote':
 		
 				# save local user's vote
-				save_user_vote(metadata, lock, host, request_value)
+				save_user_vote(metadata, lock, request_value)
 
 				# send status update to peer 0
 				status_update(metadata, lock)
