@@ -160,10 +160,10 @@ def handle_request(parsed_request, conn, addr, lock, metadata):
 			convert_vote(metadata, lock)
 
 			# generate shares for all peers
-			generate_shares(metadata, lock, request_value)
+			generate_shares(metadata, lock)
 
 			# publish shares
-			publish_shares(metadata, lock, request_value)
+			publish_shares(metadata, lock)
 
 		# update peer information from peer 0
 		elif request_type == 'updates':
@@ -394,7 +394,7 @@ def tally_votes(metadata, lock):
 # broadcast shares to peers
 # triggered by signal from peer 0
 
-def publish_shares(metadata, lock, request_value):
+def publish_shares(metadata, lock):
 
 	# NOTE: shall we lock it?
 	# the shares won't be modified
