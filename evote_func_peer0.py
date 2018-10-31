@@ -239,7 +239,7 @@ def broadcast_peer_info(metadata, lock):
     request += ' HTTP/1.1\r\n'
 
     # broadcast to all targets
-    request = byte(request)
+    request = request.encode()
 
     for each in targets:
 

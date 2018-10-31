@@ -9,7 +9,7 @@ from socket import *
 # macros
 
 vote_file = "./html/node_vote_page.html"	# html file for rendering the voting page
-waiting_file = "" # html file to show user that vote is successfully received
+waiting_file = "./html/node_wait_page.html" # html file to show user that vote is successfully received
 
 # vote page should have one form
 # action = "submitVote"
