@@ -285,7 +285,7 @@ def update_peer_info(metadata, lock, request_value):
 
 				temp[host] = [metadata['port'], status]
 				
-	metadta['peer_info'] = temp
+	metadata['peer_info'] = temp
 
 	lock.release()
 	

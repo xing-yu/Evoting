@@ -334,7 +334,7 @@ def broadcast_tally_signal(metadata, lock):
 
         s.connect(each)
 
-        s.sendall(temp)
+        s.sendall(temp.encode())
 
         s.close()
 
