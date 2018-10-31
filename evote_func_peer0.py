@@ -128,7 +128,7 @@ def handle_request(parsed_request, conn, addr, lock, metadata):
 
                 # after saving number of candidates
                 # render tally page
-                render_page(conn, fally_file)
+                render_page(conn, tally_file)
 
             else:
 
